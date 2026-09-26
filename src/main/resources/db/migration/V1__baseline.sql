@@ -1,0 +1,1 @@
+-- Marks the start of the Flyway-owned schema; no business tables yet.

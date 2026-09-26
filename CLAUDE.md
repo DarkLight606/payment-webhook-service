@@ -25,6 +25,13 @@ These rules are enforced by ArchUnit in `src/test/java/.../ArchitectureTest.java
 - Integration tests are named `*IT` and use `TestcontainersConfiguration` (`postgres:16-alpine` via `@ServiceConnection`) — no H2, no mocked datastore.
 - JaCoCo enforces an 80% line-coverage gate on `check`, excluding only `PaymentWebhookApplication.class`.
 
+## Webhook intake
+
+- `POST /webhooks/acmepay` accepts a signed AcmePay event and answers `200` for both a new and a duplicate delivery.
+- Signature header `AcmePay-Signature: t=<unix seconds>,v1=<hex>`, HMAC-SHA256 over `<t>.<raw body bytes>`, keyed by `ACMEPAY_WEBHOOK_SECRET` (property `acmepay.webhook.secret`). Timestamp tolerance is `acmepay.webhook.signature-tolerance` (default `5m`).
+- A missing, malformed or forged signature or a stale timestamp gets `401`; an unparseable body, unknown event type or missing field gets `400`. Neither stores a row.
+- Duplicates are stopped by the `(provider, event_id)` unique key on `webhook_event` with `INSERT ... ON CONFLICT DO NOTHING` — no read-before-insert.
+
 ## Conventions
 
 - No employer name, internal service/library name, internal URL, or real payment vendor name in any file. The only provider is the fictional AcmePay; the only downstream is a fake ledger API.

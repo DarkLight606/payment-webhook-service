@@ -112,6 +112,20 @@ class AcmePayWebhookControllerIT {
     }
 
     @Test
+    void receive_noBody_returns400AndStoresNothing() {
+        byte[] emptyBody = new byte[0];
+        String signature = AcmePaySignatureTestHelper.validHeader(SECRET, FIXED_NOW, emptyBody);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(SIGNATURE_HEADER_NAME, signature);
+
+        ResponseEntity<Void> response = restTemplate.exchange(
+                "/webhooks/acmepay", HttpMethod.POST, new HttpEntity<>(null, headers), Void.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(rowCount()).isZero();
+    }
+
+    @Test
     void receive_invalidJson_returns400AndStoresNothing() {
         byte[] body = "not json".getBytes(StandardCharsets.UTF_8);
         String signature = AcmePaySignatureTestHelper.validHeader(SECRET, FIXED_NOW, body);

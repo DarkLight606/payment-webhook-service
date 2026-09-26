@@ -8,6 +8,7 @@ import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
+import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -72,7 +73,12 @@ public class AcmePaySignatureAdapter implements SignatureVerificationPort {
             }
         }
 
-        Instant timestamp = Instant.ofEpochSecond(timestampSeconds);
+        Instant timestamp;
+        try {
+            timestamp = Instant.ofEpochSecond(timestampSeconds);
+        } catch (DateTimeException e) {
+            throw fail("signature header malformed");
+        }
         Duration distance = Duration.between(timestamp, clock.instant()).abs();
         if (distance.compareTo(properties.signatureTolerance()) > 0) {
             throw fail("signature timestamp out of tolerance");

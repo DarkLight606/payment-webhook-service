@@ -46,6 +46,9 @@ public class AcmePayPayloadAdapter implements WebhookPayloadPort {
     }
 
     private void validate(AcmePayEventPayload payload) {
+        if (payload == null) {
+            throw fail("webhook payload is not valid json");
+        }
         Set<ConstraintViolation<AcmePayEventPayload>> violations = validator.validate(payload);
         if (!violations.isEmpty()) {
             throw fail("webhook payload failed validation");

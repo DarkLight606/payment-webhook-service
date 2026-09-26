@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -122,6 +123,18 @@ class AcmePayWebhookControllerIT {
                 "/webhooks/acmepay", HttpMethod.POST, new HttpEntity<>(null, headers), Void.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(rowCount()).isZero();
+    }
+
+    @Test
+    void receive_oversizedBody_returns413AndStoresNothing() {
+        byte[] body = new byte[17 * 1024];
+        Arrays.fill(body, (byte) 'a');
+        String signature = AcmePaySignatureTestHelper.validHeader(SECRET, FIXED_NOW, body);
+
+        ResponseEntity<Void> response = post(body, signature);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(413);
         assertThat(rowCount()).isZero();
     }
 

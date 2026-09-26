@@ -109,7 +109,11 @@ public class AcmePaySignatureAdapter implements SignatureVerificationPort {
 
     private static boolean isHex(String value) {
         for (int i = 0; i < value.length(); i++) {
-            if (Character.digit(value.charAt(i), 16) < 0) {
+            char c = value.charAt(i);
+            boolean isAsciiDigit = c >= '0' && c <= '9';
+            boolean isLowerAsciiHexLetter = c >= 'a' && c <= 'f';
+            boolean isUpperAsciiHexLetter = c >= 'A' && c <= 'F';
+            if (!isAsciiDigit && !isLowerAsciiHexLetter && !isUpperAsciiHexLetter) {
                 return false;
             }
         }

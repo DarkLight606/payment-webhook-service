@@ -79,7 +79,9 @@ class AcmePayPayloadAdapterTest {
                 body("{\"id\":\"evt_1\",\"type\":\"payment.succeeded\",\"data\":"
                         + "{\"payment_id\":\"pay_1\",\"amount\":100,\"currency\":\"eur\"}}"),
                 body("{\"id\":\"evt_1\",\"type\":\"payment.refunded\",\"data\":"
-                        + "{\"payment_id\":\"pay_1\",\"amount\":100,\"currency\":\"EUR\"}}"));
+                        + "{\"payment_id\":\"pay_1\",\"amount\":100,\"currency\":\"EUR\"}}"),
+                body("{\"id\":\"evt_1\",\"type\":\"payment.succeeded\",\"data\":"
+                        + "{\"payment_id\":\"pay_1\",\"amount\":100,\"currency\":\"EUR\"}} trailing"));
     }
 
     private static byte[] body(String json) {

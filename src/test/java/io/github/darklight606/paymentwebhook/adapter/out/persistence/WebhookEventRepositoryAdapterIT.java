@@ -7,11 +7,14 @@ import io.github.darklight606.paymentwebhook.domain.model.EventType;
 import io.github.darklight606.paymentwebhook.domain.model.Provider;
 import io.github.darklight606.paymentwebhook.domain.model.WebhookEvent;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -103,45 +106,43 @@ class WebhookEventRepositoryAdapterIT {
     }
 
     @Test
-    void saveIfAbsent_tenConcurrentSaves_yieldExactlyOneTrueAndOneRow() throws InterruptedException {
+    void saveIfAbsent_tenConcurrentSaves_yieldExactlyOneTrueAndOneRow() throws Exception {
         var receivedAt = Instant.parse("2026-09-26T12:00:00Z");
         int threadCount = 10;
         var startLatch = new CountDownLatch(1);
-        var doneLatch = new CountDownLatch(threadCount);
-        var trueCount = new AtomicInteger();
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        List<Future<Boolean>> futures = new ArrayList<>();
 
         try {
             for (int i = 0; i < threadCount; i++) {
-                executor.submit(() -> {
-                    try {
-                        startLatch.await();
-                        var event = WebhookEvent.received(
-                                Provider.ACMEPAY,
-                                "evt_3",
-                                EventType.PAYMENT_SUCCEEDED,
-                                "pay_3",
-                                1500L,
-                                "EUR",
-                                "{\"id\":\"evt_3\"}",
-                                receivedAt);
-                        if (repositoryAdapter.saveIfAbsent(event)) {
-                            trueCount.incrementAndGet();
-                        }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    } finally {
-                        doneLatch.countDown();
-                    }
-                });
+                Callable<Boolean> task = () -> {
+                    startLatch.await();
+                    var event = WebhookEvent.received(
+                            Provider.ACMEPAY,
+                            "evt_3",
+                            EventType.PAYMENT_SUCCEEDED,
+                            "pay_3",
+                            1500L,
+                            "EUR",
+                            "{\"id\":\"evt_3\"}",
+                            receivedAt);
+                    return repositoryAdapter.saveIfAbsent(event);
+                };
+                futures.add(executor.submit(task));
             }
             startLatch.countDown();
-            assertThat(doneLatch.await(10, TimeUnit.SECONDS)).isTrue();
+
+            long trueCount = 0;
+            for (Future<Boolean> future : futures) {
+                if (future.get(10, TimeUnit.SECONDS)) {
+                    trueCount++;
+                }
+            }
+            assertThat(trueCount).isEqualTo(1);
         } finally {
             executor.shutdown();
         }
 
-        assertThat(trueCount.get()).isEqualTo(1);
         var rowCount = jdbcClient
                 .sql("select count(*) from webhook_event where provider = :provider and event_id = :eventId")
                 .param("provider", "ACMEPAY")

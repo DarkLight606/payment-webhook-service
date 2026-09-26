@@ -39,6 +39,7 @@ public class AcmePayPayloadAdapter implements WebhookPayloadPort {
             return objectMapper
                     .readerFor(AcmePayEventPayload.class)
                     .without(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
                     .readValue(rawBody);
         } catch (IOException e) {
             throw fail("webhook payload is not valid json");

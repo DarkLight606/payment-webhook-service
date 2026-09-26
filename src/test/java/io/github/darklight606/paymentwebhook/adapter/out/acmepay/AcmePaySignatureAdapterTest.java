@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.util.unit.DataSize;
 
 class AcmePaySignatureAdapterTest {
 
@@ -23,7 +24,8 @@ class AcmePaySignatureAdapterTest {
             "{\"id\":\"evt_1\",\"type\":\"payment.succeeded\"}".getBytes(StandardCharsets.UTF_8);
 
     private final Clock clock = Clock.fixed(FIXED_NOW, ZoneOffset.UTC);
-    private final AcmePayWebhookProperties properties = new AcmePayWebhookProperties(SECRET, Duration.ofMinutes(5));
+    private final AcmePayWebhookProperties properties =
+            new AcmePayWebhookProperties(SECRET, Duration.ofMinutes(5), DataSize.ofKilobytes(16));
     private final AcmePaySignatureAdapter adapter = new AcmePaySignatureAdapter(properties, clock);
 
     @Test
@@ -47,7 +49,8 @@ class AcmePaySignatureAdapterTest {
 
     @Test
     void verify_wrongSecret_throws() {
-        var wrongProperties = new AcmePayWebhookProperties("wrong-secret", Duration.ofMinutes(5));
+        var wrongProperties =
+                new AcmePayWebhookProperties("wrong-secret", Duration.ofMinutes(5), DataSize.ofKilobytes(16));
         var wrongAdapter = new AcmePaySignatureAdapter(wrongProperties, clock);
         String header = AcmePaySignatureTestHelper.validHeader(SECRET, FIXED_NOW, BODY);
 
@@ -123,6 +126,7 @@ class AcmePaySignatureAdapterTest {
                 "t=1790000000",
                 "t=1790000000,v1=short",
                 "t=1790000000,v1=" + "g".repeat(64),
+                "t=1790000000,v1=" + "０".repeat(64),
                 "t=1790000000;v1=" + validV1);
     }
 }

@@ -32,11 +32,11 @@ class PaymentWebhookApplicationIT {
     }
 
     @Test
-    void flywayInfo_afterMigration_versionOneAppliedSuccessfully() {
+    void flywayInfo_afterMigration_versionTwoAppliedSuccessfully() {
         var current = flyway.info().current();
 
         assertThat(current).isNotNull();
-        assertThat(current.getVersion().toString()).isEqualTo("1");
+        assertThat(current.getVersion().toString()).isEqualTo("2");
         assertThat(current.getState()).isEqualTo(MigrationState.SUCCESS);
     }
 
